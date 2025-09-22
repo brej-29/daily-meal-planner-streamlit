@@ -1,0 +1,7 @@
+streamlit
+openai>=1.40.0
+python-dotenv
+requests
+Pillow
+beautifulsoup4
+lxml
