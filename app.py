@@ -53,7 +53,7 @@ with st.sidebar:
     st.header("Generation Settings")
     kcal = st.number_input("Max daily kcal", min_value=800, max_value=5000, value=2000, step=50)
     exact = st.checkbox("Use only the provided ingredients", value=False, help="Otherwise pantry staples allowed")
-    model = st.selectbox("Model", ["gpt-3.5-turbo", "gpt-4.1-nano"], index=0)
+    model = st.selectbox("Model", ["gpt-5-nano", "gpt-4.1-nano"], index=0)
     temperature = st.slider("Creativity (temperature)", 0.0, 2.0, 1.0, 0.1)
     extra = st.text_input("Optional: extra style (e.g., spicy, South Indian, high-protein)")
 
@@ -77,8 +77,15 @@ if submitted:
             temperature=float(temperature),
             extra=extra or None
         )
-        st.session_state["raw_output"] = output
-        st.success("Meal plan generated.")
+        # Failsafe check
+        if output and '<section id="meal-plan">' in output:
+            st.session_state["raw_output"] = output
+            st.success("Meal plan generated.")
+        else:
+            st.error("The model failed to generate a proper response. It might be unavailable or overloaded. Please try again, or select a different model in the sidebar.")
+            # Clear any previous output
+            if "raw_output" in st.session_state:
+                del st.session_state["raw_output"]
 
 if "raw_output" in st.session_state:
     out = st.session_state["raw_output"]

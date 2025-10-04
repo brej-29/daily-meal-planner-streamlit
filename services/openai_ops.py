@@ -2,7 +2,7 @@ import os, io, shutil, requests
 from typing import Optional, List
 from openai import OpenAI
 import re
-import tempfile
+import tempfile, logging
 from bs4 import BeautifulSoup
 from pathlib import Path
 
@@ -18,10 +18,10 @@ def create_meals(client: OpenAI,
                  kcal: int = 2000,
                  exact_ingredients: bool = False,
                  output_format: str = "HTML and CSS",
-                 model: str = "gpt-3.5-turbo",
+                 model: str = "gpt-5-nano",
                  system_role: str = "You are a skilled cook and dietitian with expertise of a chef.",
                  temperature: float = 1.0,
-                 extra: Optional[str] = None) -> str:
+                 extra: Optional[str] = None) -> Optional[str]:
     prompt = f"""
 Create a healthy daily meal plan for breakfast, lunch, and dinner based on the following ingredients: ```{ingredients}```
 Return a SINGLE **HTML fragment** (no <!doctype>, <html>, <head>, or <body>, and **do not** wrap in triple backticks).
@@ -60,15 +60,20 @@ The last line of your answer should be a string that contains ONLY the titles of
 Example of the last line of your answer:
 '\\nBroccoli and Egg Scramble, Grilled Chicken and Vegetable, Baked fish and Cabbage Slaw'.
 """
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role":"system","content":system_role},
-            {"role":"user","content":prompt}
-        ],
-        temperature=temperature
-    )
-    return resp.choices[0].message.content
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role":"system","content":system_role},
+                {"role":"user","content":prompt}
+            ],
+            temperature=temperature
+        )
+        return resp.choices[0].message.content
+    except Exception as e:
+        # Log the error for debugging, but return None to the app
+        logging.error(f"OpenAI API call failed for model {model}: {e}")
+        return None
 
 def parse_titles_from_output(output: str) -> List[str]:
     last = output.splitlines()[-1]
